@@ -12,20 +12,20 @@ class PostController extends Controller
 {
     public function index()
     {
-        $posts = Post::with('user')->paginate(15);
+        $posts = Post::with('user', 'tags')->paginate(15);
         return PostResource::collection($posts);
     }
 
     public function show(Post $post)
     {
-        return new PostResource($post->load('user'));
+        return new PostResource($post->load('user', 'tags'));
     }
 
     public function store(StorePostRequest $request)
     {
         $post = auth()->user()->posts()->create($request->validated());
 
-        return (new PostResource($post->load('user')))
+        return (new PostResource($post->load('user', 'tags')))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
@@ -34,7 +34,7 @@ class PostController extends Controller
     {
         $post->update($request->validated());
 
-        return new PostResource($post->load('user'));
+        return new PostResource($post->load('user', 'tags'));
     }
 
     public function destroy(Post $post)

@@ -15,7 +15,9 @@ class PostResource extends JsonResource
             'status' => $this->status,
             'published_at' => $this->published_at,
             'user' => new UserResource($this->whenLoaded('user')),
-            // 'tags' — кандидат добавляет в Блоке А
+            // whenLoaded, а не $this->tags: ключ появляется только когда связь
+            // загружена заранее, поэтому ресурс не может сам спровоцировать N+1.
+            'tags' => TagResource::collection($this->whenLoaded('tags')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
