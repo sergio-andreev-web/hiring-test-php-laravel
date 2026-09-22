@@ -16,7 +16,9 @@ Route::apiResource('posts', PostController::class);
 
 // Блок А — управление тегами поста.
 // auth даёт 401 анониму, ->can() проверяет PostPolicy::manageTags и даёт 403 чужому.
-Route::middleware('auth')->group(function () {
+// throttle ограничивает частоту: без него любая ошибка авторизации масштабируется
+// циклом, а привязка тегов — это запись в БД.
+Route::middleware(['auth', 'throttle:60,1'])->group(function () {
     Route::post('posts/{post}/tags', [PostTagController::class, 'store'])
         ->can('manageTags', 'post');
 
@@ -28,9 +30,11 @@ Route::middleware('auth')->group(function () {
 // Чтение публичное. Изменение — под auth, а правка и удаление конкретной
 // записи дополнительно проходят TagPolicy: справочник общий, поэтому менять
 // его можно лишь пока это не задевает посты других пользователей.
-Route::apiResource('tags', TagController::class)->only(['index', 'show']);
+Route::middleware('throttle:120,1')->group(function () {
+    Route::apiResource('tags', TagController::class)->only(['index', 'show']);
+});
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'throttle:60,1'])->group(function () {
     Route::post('tags', [TagController::class, 'store'])->name('tags.store');
 
     Route::match(['put', 'patch'], 'tags/{tag}', [TagController::class, 'update'])

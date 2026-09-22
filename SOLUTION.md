@@ -34,17 +34,18 @@ php artisan serve
 | `DELETE` | `/api/posts/{post}/tags/{tag}` | — | `204` |
 
 Обе операции требуют аутентификации и авторства поста: аноним получает `401`, чужой
-пользователь — `403`, несуществующий пост или тег — `404`, невалидный список — `422`.
+пользователь — `403`, несуществующий пост или тег — `404`, невалидный список — `422`,
+превышение частоты — `429` (`throttle:60,1`).
 
 ### Справочник тегов
 
 | Метод | URL | Доступ |
 |---|---|---|
-| `GET` | `/api/tags` | публично, пагинация, `posts_count` у каждого тега |
+| `GET` | `/api/tags` | публично, пагинация, `posts_count` у каждого тега, `throttle:120,1` |
 | `GET` | `/api/tags/{tag}` | публично |
 | `POST` | `/api/tags` | `auth` |
-| `PATCH` | `/api/tags/{tag}` | `auth` |
-| `DELETE` | `/api/tags/{tag}` | `auth` |
+| `PATCH` | `/api/tags/{tag}` | `auth` + `TagPolicy` |
+| `DELETE` | `/api/tags/{tag}` | `auth` + `TagPolicy` |
 
 ```bash
 curl http://localhost:8000/api/tags

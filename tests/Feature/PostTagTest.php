@@ -191,6 +191,26 @@ class PostTagTest extends TestCase
         $this->assertDatabaseCount('post_tag', 1);
     }
 
+    public function test_attach_returns_404_for_unknown_post()
+    {
+        $tag = Tag::factory()->create();
+
+        $response = $this->actingAs($this->user)
+            ->postJson('/api/posts/999999/tags', ['tag_ids' => [$tag->id]]);
+
+        $response->assertStatus(404);
+        $this->assertDatabaseCount('post_tag', 0);
+    }
+
+    public function test_detach_returns_404_for_unknown_post()
+    {
+        $tag = Tag::factory()->create();
+
+        $this->actingAs($this->user)
+            ->deleteJson("/api/posts/999999/tags/{$tag->id}")
+            ->assertStatus(404);
+    }
+
     public function test_detach_returns_404_for_unknown_tag()
     {
         $response = $this->actingAs($this->user)
@@ -265,6 +285,17 @@ class PostTagTest extends TestCase
         // Проверка вынесена в один whereIn, поэтому число запросов не зависит
         // от размера пачки.
         $this->assertLessThanOrEqual(12, $queries, "Валидация масштабируется с размером пачки: {$queries} запросов на 20 тегов");
+    }
+
+    public function test_tag_routes_are_rate_limited()
+    {
+        $throttled = collect(app('router')->getRoutes()->getRoutes())
+            ->filter(fn ($route) => str_starts_with($route->uri(), 'api/posts/{post}/tags')
+                || str_starts_with($route->uri(), 'api/tags'))
+            ->every(fn ($route) => collect($route->gatherMiddleware())
+                ->contains(fn ($m) => is_string($m) && str_starts_with($m, 'throttle:')));
+
+        $this->assertTrue($throttled, 'Все маршруты тегов должны быть под throttle');
     }
 
     // --- Целостность данных --------------------------------------------
