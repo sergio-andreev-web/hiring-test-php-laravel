@@ -1,3 +1,30 @@
+> ## Навигация по решению
+>
+> Это README с условиями задания — оставлен без изменений, кроме этого блока.
+> Ниже — что было добавлено и куда смотреть.
+>
+> | Файл | Что внутри |
+> |---|---|
+> | **[SOLUTION.md](SOLUTION.md)** | **Начать отсюда.** Что сделано, справочник API, принятые решения и почему именно так |
+> | **[REVIEW.md](REVIEW.md)** | Блок Б: разбор `PublishController`, 16 проблем по четырём уровням |
+> | **[AI-LOG.md](AI-LOG.md)** | Лог использования ИИ: что просил, что принял, что отклонил |
+> | [CHANGES.md](CHANGES.md) | Подробный журнал правок: каждое изменение с обоснованием |
+>
+> **Код Блока А:** модель тега и связь — `app/Models/{Post,Tag}.php`, миграция связи —
+> `database/migrations/2024_01_01_000040_create_post_tag_table.php`, эндпоинты —
+> `app/Http/Controllers/PostTagController.php` и `TagController.php`, валидация —
+> `app/Http/Requests/`, авторизация — `app/Policies/`, тесты —
+> `tests/Feature/PostTagTest.php` и `TagTest.php`.
+>
+> **`app/Http/Controllers/PublishController.php` не изменялся** — проверяется одной командой:
+> `git diff bd8ae16 -- app/Http/Controllers/PublishController.php` (пустой вывод).
+> Первый коммит `bd8ae16` — нетронутый baseline, поэтому весь мой вклад виден как
+> `git diff bd8ae16..HEAD`.
+>
+> **Запуск:** `composer install && cp .env.example .env && php artisan key:generate &&
+> touch database/database.sqlite && php artisan migrate --seed && php artisan test`
+> → 48 тестов зелёные.
+
 # Тестовое задание: PHP Backend Developer (Laravel)
 
 ## О задании
