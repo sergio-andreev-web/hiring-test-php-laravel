@@ -25,11 +25,22 @@ Route::middleware('auth')->group(function () {
 });
 
 // Блок А (опциональное расширение) — справочник тегов.
-// Чтение публичное, изменение справочника — только для аутентифицированных.
+// Чтение публичное. Изменение — под auth, а правка и удаление конкретной
+// записи дополнительно проходят TagPolicy: справочник общий, поэтому менять
+// его можно лишь пока это не задевает посты других пользователей.
 Route::apiResource('tags', TagController::class)->only(['index', 'show']);
-Route::apiResource('tags', TagController::class)
-    ->except(['index', 'show'])
-    ->middleware('auth');
+
+Route::middleware('auth')->group(function () {
+    Route::post('tags', [TagController::class, 'store'])->name('tags.store');
+
+    Route::match(['put', 'patch'], 'tags/{tag}', [TagController::class, 'update'])
+        ->name('tags.update')
+        ->can('update', 'tag');
+
+    Route::delete('tags/{tag}', [TagController::class, 'destroy'])
+        ->name('tags.destroy')
+        ->can('delete', 'tag');
+});
 
 // Блок Б — код-ревью, не рефакторить
 Route::post('/publish/batch', [PublishController::class, 'batch']);

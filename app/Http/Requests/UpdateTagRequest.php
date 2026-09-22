@@ -26,7 +26,7 @@ class UpdateTagRequest extends FormRequest
                 'required',
                 'string',
                 'max:255',
-                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/D',
                 Rule::unique('tags', 'slug')->ignore($this->route('tag')),
             ],
         ];

@@ -244,6 +244,29 @@ class PostTagTest extends TestCase
         $this->assertLessThanOrEqual(5, $queries, "Похоже на N+1: выполнено {$queries} запросов");
     }
 
+    public function test_attaching_many_tags_does_not_scale_queries_with_batch_size()
+    {
+        $tags = Tag::factory(20)->create();
+
+        DB::enableQueryLog();
+
+        $response = $this->actingAs($this->user)
+            ->postJson("/api/posts/{$this->post->id}/tags", [
+                'tag_ids' => $tags->pluck('id')->all(),
+            ]);
+
+        $queries = count(DB::getQueryLog());
+        DB::disableQueryLog();
+
+        $response->assertStatus(200);
+
+        // Правило exists выполняло бы отдельный SELECT на каждый идентификатор:
+        // 20 тегов стоили бы 20 запросов только на проверку существования.
+        // Проверка вынесена в один whereIn, поэтому число запросов не зависит
+        // от размера пачки.
+        $this->assertLessThanOrEqual(12, $queries, "Валидация масштабируется с размером пачки: {$queries} запросов на 20 тегов");
+    }
+
     // --- Целостность данных --------------------------------------------
 
     public function test_deleting_a_tag_removes_its_links()

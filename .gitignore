@@ -21,3 +21,7 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Локальные отчёты security-аудита (могут содержать чувствительные данные)
+/security-reports
+/audit-context

@@ -222,6 +222,76 @@ class TagTest extends TestCase
         $this->assertModelExists($tag);
     }
 
+    // --- Авторизация в справочнике ------------------------------------
+    //
+    // Слепая зона прошлой версии тестов: везде проверялся только гость (401),
+    // а кейс «другой аутентифицированный пользователь» не покрывался нигде.
+    // Из-за этого мимо 42 зелёных тестов прошла дыра: политика стояла на
+    // /posts/{post}/tags, но не на самом справочнике, и чужой тег можно было
+    // удалить в обход — каскад вычищал связи у постов всех пользователей.
+
+    public function test_user_cannot_delete_tag_used_by_someone_elses_post()
+    {
+        $tag = Tag::factory()->create();
+        $stranger = User::factory()->create();
+        Post::factory()->for($stranger)->create()->tags()->attach($tag);
+
+        $response = $this->actingAs($this->user)->deleteJson("/api/tags/{$tag->id}");
+
+        $response->assertStatus(403);
+        $this->assertModelExists($tag);
+        $this->assertDatabaseCount('post_tag', 1);
+    }
+
+    public function test_user_cannot_rename_tag_used_by_someone_elses_post()
+    {
+        $tag = Tag::factory()->create(['name' => 'Laravel']);
+        $stranger = User::factory()->create();
+        Post::factory()->for($stranger)->create()->tags()->attach($tag);
+
+        $response = $this->actingAs($this->user)
+            ->patchJson("/api/tags/{$tag->id}", ['name' => 'Захвачено']);
+
+        $response->assertStatus(403);
+        $this->assertDatabaseHas('tags', ['id' => $tag->id, 'name' => 'Laravel']);
+    }
+
+    public function test_user_can_delete_tag_used_only_by_own_posts()
+    {
+        $tag = Tag::factory()->create();
+        Post::factory()->for($this->user)->create()->tags()->attach($tag);
+
+        $response = $this->actingAs($this->user)->deleteJson("/api/tags/{$tag->id}");
+
+        $response->assertStatus(204);
+        $this->assertModelMissing($tag);
+    }
+
+    public function test_user_can_delete_unused_tag()
+    {
+        $tag = Tag::factory()->create();
+
+        $this->actingAs($this->user)
+            ->deleteJson("/api/tags/{$tag->id}")
+            ->assertStatus(204);
+    }
+
+    // Модификатор D у regex проверяется на уровне правила, а не через HTTP:
+    // глобальный middleware TrimStrings срезал бы перевод строки до валидации,
+    // и дефект остался бы невидимым. Правило должно держать оборону само.
+    public function test_slug_rule_rejects_trailing_newline()
+    {
+        $rules = (new \App\Http\Requests\StoreTagRequest)->rules();
+
+        $validator = \Illuminate\Support\Facades\Validator::make(
+            ['name' => 'Laravel', 'slug' => "laravel\n"],
+            $rules
+        );
+
+        $this->assertTrue($validator->fails(), 'Slug с переводом строки должен отклоняться');
+        $this->assertArrayHasKey('slug', $validator->errors()->toArray());
+    }
+
     public function test_show_returns_404_for_unknown_tag()
     {
         $this->getJson('/api/tags/999999')->assertStatus(404);
