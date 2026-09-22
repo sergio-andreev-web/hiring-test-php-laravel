@@ -12,6 +12,8 @@ class TagResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
+            // Появляется только там, где счётчик посчитали через withCount.
+            'posts_count' => $this->whenCounted('posts'),
         ];
     }
 }
